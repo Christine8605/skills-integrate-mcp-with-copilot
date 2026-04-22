@@ -47,6 +47,15 @@ main {
   height: fit-content;
 }
 
+#activities-container {
+  order: 1;
+}
+
+#signup-container {
+  order: 2;
+  margin-left: 30px;
+}
+
 #sidebar nav h3 {
   color: #32cd32;
   margin-bottom: 10px;
@@ -250,6 +259,9 @@ footer {
     width: 100%;
     max-width: 100%;
     min-width: unset;
+  }
+  #signup-container {
+    margin-left: 0;
   }
 }
 
