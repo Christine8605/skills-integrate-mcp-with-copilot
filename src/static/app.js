@@ -3,43 +3,72 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  // Add filter/search UI
+  const filterContainer = document.createElement("div");
+  filterContainer.className = "filter-container";
+  filterContainer.innerHTML = `
+    <label for="category-filter">Category:</label>
+    <select id="category-filter">
+      <option value="">All</option>
+      <option value="Academic">Academic</option>
+      <option value="Arts">Arts</option>
+      <option value="Games">Games</option>
+      <option value="Sports">Sports</option>
+    </select>
+    <input type="text" id="search-box" placeholder="Search activities..." />
+    <button id="search-btn">Search</button>
+  `;
+  activitiesList.parentElement.insertBefore(filterContainer, activitiesList);
 
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
-      const response = await fetch("/activities");
+      // Get filter/search values
+      const category = document.getElementById("category-filter").value;
+      const search = document.getElementById("search-box").value;
+      let url = "/activities";
+      const params = [];
+      if (category) params.push(`category=${encodeURIComponent(category)}`);
+      if (search) params.push(`search=${encodeURIComponent(search)}`);
+      if (params.length) url += `?${params.join("&")}`;
+
+      const response = await fetch(url);
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and dropdown
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+
+      // Sort activities alphabetically
+      const sorted = Object.entries(activities).sort((a, b) => a[0].localeCompare(b[0]));
 
       // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
+      sorted.forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft =
-          details.max_participants - details.participants.length;
+        const spotsLeft = details.max_participants - details.participants.length;
 
         // Create participants HTML with delete icons instead of bullet points
         const participantsHTML =
           details.participants.length > 0
             ? `<div class="participants-section">
-              <h5>Participants:</h5>
-              <ul class="participants-list">
-                ${details.participants
-                  .map(
-                    (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
-                  )
-                  .join("")}
-              </ul>
-            </div>`
+                <h5>Participants:</h5>
+                <ul class="participants-list">
+                  ${details.participants
+                    .map(
+                      (email) =>
+                        `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>`
             : `<p><em>No participants yet</em></p>`;
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
+          <p><strong>Category:</strong> ${details.category || "N/A"}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-container">
@@ -153,6 +182,13 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
     }
+  });
+
+  // Filter/search event listeners
+  document.getElementById("category-filter").addEventListener("change", fetchActivities);
+  document.getElementById("search-btn").addEventListener("click", fetchActivities);
+  document.getElementById("search-box").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") fetchActivities();
   });
 
   // Initialize app
